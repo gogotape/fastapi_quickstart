@@ -18,3 +18,9 @@ class Product(BaseModel):
     name: str
     category: str
     price: float
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+

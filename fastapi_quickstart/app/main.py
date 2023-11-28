@@ -1,7 +1,9 @@
+import uuid
+
 import uvicorn
-from fastapi import FastAPI
-from app.models.models import User, UserCreate, Product
-from app.data.db import sample_products
+from fastapi import FastAPI, Response, Cookie
+from app.models.models import User, UserCreate, Product, UserLogin
+from app.data.db import sample_products, users_db, sessions
 
 
 app = FastAPI()
@@ -44,6 +46,26 @@ async def get_product(product_id: int) -> Product:
 @app.get("/products/search")
 async def search_product(keyword: str, category: str = None, limit: int = 10):
     return list(filter(lambda x: x["category"] == category and keyword in x["name"], sample_products[:limit]))
+
+
+@app.post("/login")
+async def login(user_login: UserLogin, response: Response):
+    if users_db.get(user_login.username) and users_db.get(user_login.username) == user_login.password:
+        session_token = str(uuid.uuid4())
+        sessions[session_token] = user_login
+        response.set_cookie(key="session_token", value=session_token, httponly=True)
+        return {"message": "куки установлены"}
+    else:
+        return {"message": "Неверный логин или пароль"}
+
+
+@app.get("/user")
+async def user_info(session_token = Cookie()):
+    user = sessions.get(session_token)
+    if user:
+        return {"message": "Some info about user"}
+    else:
+        return {"message": "Unauthorized"}
 
 
 if __name__ == "__main__":
