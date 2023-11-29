@@ -1,7 +1,8 @@
 import uuid
+from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Response, Cookie
+from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException
 from app.models.models import User, UserCreate, Product, UserLogin
 from app.data.db import sample_products, users_db, sessions
 
@@ -66,6 +67,17 @@ async def user_info(session_token = Cookie()):
         return {"message": "Some info about user"}
     else:
         return {"message": "Unauthorized"}
+
+
+@app.get("/headers")
+async def get_headers(request: Request):
+    user_agent = request.headers.get("User-Agent")
+    accept_language = request.headers.get("Accept-Language")
+    if not user_agent or not accept_language:
+        raise HTTPException(status_code=400, detail="Неверный запрос")
+
+    res = {"User-Agent": user_agent, "Accept-Language": accept_language}
+    return res
 
 
 if __name__ == "__main__":
