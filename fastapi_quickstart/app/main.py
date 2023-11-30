@@ -2,12 +2,14 @@ import uuid
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException
+from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException, Depends, status
+from fastapi.security import HTTPBasicCredentials, HTTPBasic
 from app.models.models import User, UserCreate, Product, UserLogin
 from app.data.db import sample_products, users_db, sessions
 
 
 app = FastAPI()
+security = HTTPBasic()
 user1 = User(name="John Doe", age=15)
 
 
@@ -78,6 +80,20 @@ async def get_headers(request: Request):
 
     res = {"User-Agent": user_agent, "Accept-Language": accept_language}
     return res
+
+
+async def auth_user(credentials: Annotated[HTTPBasicCredentials, Depends(security)]) -> UserLogin:
+    user = credentials.username
+    if user not in users_db or users_db.get(user) != credentials.password:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Invalid credentials",
+                            headers={"WWW-Authenticate": "Basic"})
+    return UserLogin(**{"username": credentials.username, "password": credentials.password})
+
+
+@app.get("/login_sec")
+async def login_sec(user: UserLogin = Depends(auth_user)):
+    return {"message": f"You got my secret, welcome, {user.username}"}
 
 
 if __name__ == "__main__":
