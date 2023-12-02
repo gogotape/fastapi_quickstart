@@ -37,3 +37,13 @@ sample_products = [sample_product_1, sample_product_2, sample_product_3, sample_
 
 users_db = {"user": "password123"}
 sessions: dict = {}
+
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
+        "disabled": False,
+    }
+}
