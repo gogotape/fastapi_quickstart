@@ -1,4 +1,4 @@
-from pydantic import BaseModel, PositiveInt, EmailStr
+from pydantic import BaseModel, PositiveInt, EmailStr, Field
 
 
 class User(BaseModel):
@@ -43,3 +43,15 @@ class UserInfo(BaseModel):
 
 class UserInDB(UserInfo):
     hashed_password: str
+
+
+class ToDoData(BaseModel):
+    title: str
+    description: str
+
+
+class ToDo(BaseModel):
+    id: int
+    title: str
+    description: str
+    completed: bool = False

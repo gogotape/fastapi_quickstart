@@ -7,11 +7,19 @@ import uvicorn
 from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException, Depends, status
 from fastapi.security import HTTPBasicCredentials, HTTPBasic, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
-from app.models.models import User, UserCreate, Product, UserLogin, UserInDB, TokenData, Token, UserInfo
+from app.crud import crud
+from database.db import SessionLocal, engine
+
+from app.models.models import User, UserCreate, Product, UserLogin, UserInDB, TokenData, Token, UserInfo, ToDo, ToDoData
 from app.data.db import sample_products, users_db, sessions, fake_users_db
 
+from database.db import Base
+
+Base.metadata.create_all(bind=engine)
 app = FastAPI()
+
 security = HTTPBasic()
 user1 = User(name="John Doe", age=15)
 
@@ -200,6 +208,38 @@ async def read_own_items(
         current_user: Annotated[UserInfo, Depends(get_current_active_user)]
 ):
     return [{"item_id": "Foo", "owner": current_user.username}]
+
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.post("/create_todo", response_model=ToDo)
+async def create_todo(todo: ToDoData, db: Session = Depends(get_db)):
+    return crud.create_todo(db=db, todo=todo)
+
+
+@app.get("/todo/{todo_id}", response_model=ToDo)
+async def get_todo(todo_id: int, db: Session = Depends(get_db)):
+    db_todo = crud.get_todo(db=db, todo_id=todo_id)
+    if not db_todo:
+        raise HTTPException(status_code=404, detail="ToDo not found")
+    return db_todo
+
+
+@app.put("/update_todo/", response_model=ToDo)
+async def update_todo(todo: ToDo, db: Session = Depends(get_db)):
+    return crud.update_todo(db=db, todo=todo)
+
+
+@app.delete("/delete/{todo_id}")
+async def delete_todo(todo_id: int, db: Session = Depends(get_db)):
+    return crud.delete_todo(db=db, todo_id=todo_id)
 
 
 if __name__ == "__main__":
