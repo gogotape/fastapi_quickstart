@@ -8,6 +8,7 @@ from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException, D
 from fastapi.security import HTTPBasicCredentials, HTTPBasic, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from uvicorn.config import LOGGING_CONFIG
 
 from app.crud import crud
 from database.db import SessionLocal, engine
@@ -19,6 +20,8 @@ from database.db import Base
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI()
+message_format = '[%(asctime)s] [%(levelname)s] [%(name)s]:\t%(message)s'
+LOGGING_CONFIG["formatters"]["access"]["fmt"] = message_format
 
 security = HTTPBasic()
 user1 = User(name="John Doe", age=15)
