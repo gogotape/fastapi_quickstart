@@ -1,24 +1,33 @@
+import asyncio
 import uuid
 from datetime import datetime, timedelta
 from typing import Annotated
 
 from jose import JWTError, jwt
 import uvicorn
-from fastapi import FastAPI, Response, Cookie, Header, Request, HTTPException, Depends, status
+from fastapi import FastAPI, Response, Cookie, Request, HTTPException, Depends, status
 from fastapi.security import HTTPBasicCredentials, HTTPBasic, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from uvicorn.config import LOGGING_CONFIG
 
 from app.crud import crud
-from database.db import SessionLocal, engine
+from database.db import engine, async_session
 
 from app.models.models import User, UserCreate, Product, UserLogin, UserInDB, TokenData, Token, UserInfo, ToDo, ToDoData
 from app.data.db import sample_products, users_db, sessions, fake_users_db
 
 from database.db import Base
 
-Base.metadata.create_all(bind=engine)
+
+async def init_models():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+
 app = FastAPI()
 message_format = '[%(asctime)s] [%(levelname)s] [%(name)s]:\t%(message)s'
 LOGGING_CONFIG["formatters"]["access"]["fmt"] = message_format
@@ -214,35 +223,33 @@ async def read_own_items(
 
 
 # Dependency
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+async def get_session() -> AsyncSession:
+    async with async_session() as session:
+        yield session
 
 
 @app.post("/create_todo", response_model=ToDo)
-async def create_todo(todo: ToDoData, db: Session = Depends(get_db)):
-    return crud.create_todo(db=db, todo=todo)
+async def create_todo(todo: ToDoData, session: AsyncSession = Depends(get_session)):
+    todo = await crud.create_todo(session=session, todo=todo)
+    return todo
 
 
 @app.get("/todo/{todo_id}", response_model=ToDo)
-async def get_todo(todo_id: int, db: Session = Depends(get_db)):
-    db_todo = crud.get_todo(db=db, todo_id=todo_id)
+async def get_todo(todo_id: int, session: AsyncSession = Depends(get_session)):
+    db_todo = await crud.get_todo(session=session, todo_id=todo_id)
     if not db_todo:
         raise HTTPException(status_code=404, detail="ToDo not found")
     return db_todo
 
 
 @app.put("/update_todo/", response_model=ToDo)
-async def update_todo(todo: ToDo, db: Session = Depends(get_db)):
-    return crud.update_todo(db=db, todo=todo)
+async def update_todo(todo: ToDo, session: AsyncSession = Depends(get_session)):
+    return await crud.update_todo(session=session, todo=todo)
 
 
 @app.delete("/delete/{todo_id}")
-async def delete_todo(todo_id: int, db: Session = Depends(get_db)):
-    return crud.delete_todo(db=db, todo_id=todo_id)
+async def delete_todo(todo_id: int, session: AsyncSession = Depends(get_session)):
+    return await crud.delete_todo(session=session, todo_id=todo_id)
 
 
 if __name__ == "__main__":

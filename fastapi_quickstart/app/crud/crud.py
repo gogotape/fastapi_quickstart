@@ -1,42 +1,41 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import select, delete, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.db import ToDoModel
 from app.models.models import ToDoData, ToDo
 
 
-def get_todo(db: Session, todo_id: int):
-    return db.query(ToDoModel).filter(ToDoModel.id == todo_id).first()
+async def get_todo(session: AsyncSession, todo_id: int):
+    db_item = await session.get(ToDoModel, todo_id)
+    return db_item
 
 
-def create_todo(db: Session, todo: ToDoData):
+async def create_todo(session: AsyncSession, todo: ToDoData):
     db_item = ToDoModel(**todo.model_dump())
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
+    session.add(db_item)
+    await session.commit()
     return db_item
 
 
-def update_todo(db: Session, todo: ToDo):
-    # get the existing data
-    db_item = get_todo(db=db, todo_id=todo.id)
-    if not db_item:
-        raise HTTPException(status_code=404, detail="Data not found")
-
-    # Update model class variable from requested fields
-    for var, value in vars(todo).items():
-        setattr(db_item, var, value) if value else None
-
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item
-
-
-def delete_todo(db: Session, todo_id: int):
-    item = get_todo(db=db, todo_id=todo_id)
+async def update_todo(session: AsyncSession, todo: ToDo):
+    statement = (
+        update(ToDoModel).
+        where(ToDoModel.id == todo.id).
+        values(todo.model_dump(exclude_unset=True)).
+        returning(ToDoModel)
+    )
+    result = await session.execute(statement)
+    item = result.first()
     if not item:
+        raise HTTPException(404, "Data not found!")
+    await session.commit()
+    return item
+
+
+async def delete_todo(session: AsyncSession, todo_id: int):
+    item = await session.execute(delete(ToDoModel).where(ToDoModel.id == todo_id).returning(ToDoModel.id))
+    if not item.scalar():
         raise HTTPException(status_code=404, detail="Data not found")
-    db.delete(item)
-    db.commit()
+    await session.commit()
     return {"message": "Item successfully deleted"}

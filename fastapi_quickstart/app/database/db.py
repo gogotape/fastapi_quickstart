@@ -1,16 +1,21 @@
-from sqlalchemy import create_engine, Column, String, Integer, Boolean
+from sqlalchemy import Column, String, Integer, Boolean
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
+hostname = "localhost"
+database = "demo"
+username = "user"
+pwd = "password"
+port = "5432"
 
-# "check_same_thread" is needed only for SQLite. It's not needed for other databases.
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+DATABASE_URL = "postgresql+asyncpg://user:password@localhost/demo"
+
+engine = create_async_engine(DATABASE_URL, echo=True)
 
 Base = declarative_base()
+async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 class ToDoModel(Base):
