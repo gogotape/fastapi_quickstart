@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, Boolean
+from sqlalchemy import Column, String, Integer, Boolean, Float
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
@@ -24,3 +24,13 @@ class ToDoModel(Base):
     title = Column(String)
     description = Column(String)
     completed = Column(Boolean, default=False)
+
+
+class Product(Base):
+    __tablename__ = "Product"
+
+    id = Column(Integer, autoincrement=True, primary_key=True, unique=True, index=True)
+    title = Column(String)
+    price = Column(Float)
+    count = Column(Integer)
+    description = Column(String)
