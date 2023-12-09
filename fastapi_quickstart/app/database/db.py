@@ -1,8 +1,8 @@
 from sqlalchemy import Column, String, Integer, Boolean
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+
 
 hostname = "localhost"
 database = "demo"
@@ -13,9 +13,8 @@ port = "5432"
 DATABASE_URL = "postgresql+asyncpg://user:password@localhost/demo"
 
 engine = create_async_engine(DATABASE_URL, echo=True)
-
+async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
-async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 class ToDoModel(Base):
