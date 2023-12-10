@@ -55,3 +55,9 @@ class ToDo(BaseModel):
     title: str
     description: str
     completed: bool = False
+
+
+# Pydantic модель ответов на ошибки
+class ErrorResponse(BaseModel):
+    error_code: int
+    error_details: str

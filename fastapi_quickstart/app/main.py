@@ -9,6 +9,7 @@ from fastapi import FastAPI, Response, Cookie, Request, HTTPException, Depends, 
 from fastapi.security import HTTPBasicCredentials, HTTPBasic, OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 from uvicorn.config import LOGGING_CONFIG
 
 from app.crud import crud
@@ -18,6 +19,7 @@ from app.models.models import User, UserCreate, Product, UserLogin, UserInDB, To
 from app.data.db import sample_products, users_db, sessions, fake_users_db
 
 from database.db import Base
+from exceptions.exceptions import CustomExceptionA
 
 
 async def init_models():
@@ -249,7 +251,18 @@ async def update_todo(todo: ToDo, session: AsyncSession = Depends(get_session)):
 
 @app.delete("/delete/{todo_id}")
 async def delete_todo(todo_id: int, session: AsyncSession = Depends(get_session)):
+    if todo_id > 5:
+        raise CustomExceptionA(detail="Bad request", status_code=500)
     return await crud.delete_todo(session=session, todo_id=todo_id)
+
+
+# Обработчик ошибок (error handler)
+@app.exception_handler(CustomExceptionA)
+async def custom_exception_handler(request: Request, exc: CustomExceptionA):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail}
+    )
 
 
 if __name__ == "__main__":
