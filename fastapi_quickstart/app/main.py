@@ -15,11 +15,12 @@ from uvicorn.config import LOGGING_CONFIG
 from app.crud import crud
 from database.db import engine, async_session
 
-from app.models.models import User, UserCreate, Product, UserLogin, UserInDB, TokenData, Token, UserInfo, ToDo, ToDoData
+from app.schemas.schemas import User, UserCreate, Product, UserLogin, UserInDB, TokenData, Token, UserInfo, ToDo, \
+    ToDoData, MyProduct, ProductData, ErrorResponseModel
 from app.data.db import sample_products, users_db, sessions, fake_users_db
 
 from database.db import Base
-from exceptions.exceptions import CustomExceptionA
+from exceptions.exceptions import CustomExceptionA, InvalidProductDataException, ProductNotFoundException
 
 
 async def init_models():
@@ -264,6 +265,30 @@ async def custom_exception_handler(request: Request, exc: CustomExceptionA):
         content={"error": exc.detail}
     )
 
+
+@app.post("/create_product")
+async def create_product(product_data: ProductData, session: AsyncSession = Depends(get_session)):
+    return await crud.create_product(product_data=product_data,
+                                     session=session)
+
+
+@app.get("/products/{product_id}", response_model=MyProduct)
+async def get_product(product_id: int, session: AsyncSession = Depends(get_session)):
+    return await crud.get_product(product_id=product_id,
+                                  session=session)
+
+
+@app.get("/products")
+async def get_products(session: AsyncSession = Depends(get_session)):
+    return await crud.get_all_products(session=session)
+
+
+@app.exception_handler(ProductNotFoundException)
+async def product_not_found_handler(request: Request, exc: ProductNotFoundException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "errors": exc.errors}
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)

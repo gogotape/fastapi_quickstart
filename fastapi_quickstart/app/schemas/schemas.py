@@ -61,3 +61,20 @@ class ToDo(BaseModel):
 class ErrorResponse(BaseModel):
     error_code: int
     error_details: str
+
+
+class ProductData(BaseModel):
+    title: str
+    price: float
+    count: int
+    description: str
+
+
+class MyProduct(ProductData):
+    id: int
+
+
+class ErrorResponseModel(BaseModel):
+    status_code: int
+    message: str
+    error_code: int

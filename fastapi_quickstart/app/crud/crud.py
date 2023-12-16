@@ -2,8 +2,9 @@ from fastapi import HTTPException
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.db import ToDoModel
-from app.models.models import ToDoData, ToDo
+from app.database.db import ToDoModel, Product
+from app.schemas.schemas import ToDoData, ToDo, MyProduct, ProductData
+from exceptions.exceptions import ProductNotFoundException
 
 
 async def get_todo(session: AsyncSession, todo_id: int):
@@ -39,3 +40,22 @@ async def delete_todo(session: AsyncSession, todo_id: int):
         raise HTTPException(status_code=404, detail="Data not found")
     await session.commit()
     return {"message": "Item successfully deleted"}
+
+
+async def create_product(session: AsyncSession, product_data: ProductData):
+    product_item = Product(**product_data.model_dump())
+    session.add(product_item)
+    await session.commit()
+    return product_item
+
+
+async def get_product(session: AsyncSession, product_id: int):
+    item = await session.get(Product, product_id)
+    if not item:
+        raise ProductNotFoundException(errors="Продукт не найден")
+    return item
+
+
+async def get_all_products(session: AsyncSession):
+    result = await session.execute(select(Product))
+    return result.scalars().all()
