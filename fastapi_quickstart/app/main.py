@@ -290,5 +290,11 @@ async def product_not_found_handler(request: Request, exc: ProductNotFoundExcept
         content={"detail": exc.detail, "errors": exc.errors}
     )
 
+
+@app.get("/sum/")
+async def calculate_sum(a: int, b: int):
+    return {"result": a + b}
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
